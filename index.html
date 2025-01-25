@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Trial Room</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: #f0f2f5;
+    }
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+</style>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Smart Trial Room</h1>
+            <p class="text-gray-600">Virtual Fitting Experience</p>
+        </header>
+
+        <div id="mainContent" class="max-w-4xl mx-auto">
+            <!-- Selection Form -->
+            <div id="selectionForm" class="glass-effect rounded-lg p-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Gender</label>
+                        <select id="gender" class="w-full p-2 border rounded-md">
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Clothes Type</label>
+                        <select id="clothType" class="w-full p-2 border rounded-md">
+                            <option value="">Select Type</option>
+                            <option value="tshirt">T-Shirt</option>
+                            <option value="shirt">Shirt</option>
+                            <option value="pants">Pants</option>
+                            <option value="dress">Dress</option>
+                            <option value="jacket">Jacket</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Size</label>
+                        <select id="size" class="w-full p-2 border rounded-md">
+                            <option value="">Select Size</option>
+                            <option value="xs">XS</option>
+                            <option value="s">S</option>
+                            <option value="m">M</option>
+                            <option value="l">L</option>
+                            <option value="xl">XL</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Color</label>
+                        <select id="color" class="w-full p-2 border rounded-md">
+                            <option value="">Select Color</option>
+                            <option value="black">Black</option>
+                            <option value="white">White</option>
+                            <option value="red">Red</option>
+                            <option value="blue">Blue</option>
+                            <option value="green">Green</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 text-center">
+                    <button id="startTrial" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        Start Virtual Trial
+                    </button>
+                </div>
+            </div>
+
+            <!-- Camera Preview -->
+            <div id="cameraPreview" class="hidden">
+                <div class="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg mb-4">
+                    <video id="video" class="w-full h-full object-cover rounded-lg" autoplay></video>
+                </div>
+                <div class="text-center space-x-4">
+                    <button id="capture" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-colors">
+                        <i class="bi bi-camera-fill mr-2"></i>Capture
+                    </button>
+                    <button id="retake" class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-colors hidden">
+                        <i class="bi bi-arrow-counterclockwise mr-2"></i>Retake
+                    </button>
+                </div>
+            </div>
+
+            <!-- Result Preview -->
+            <div id="resultPreview" class="hidden">
+                <canvas id="previewCanvas" class="w-full rounded-lg mb-4"></canvas>
+                <div class="text-center">
+                    <button id="tryAnother" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        Try Another Item
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Section -->
+        <div id="adminSection" class="mt-12 pt-8 border-t">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Stock Management</h2>
+            <div class="glass-effect rounded-lg p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Scan Clothes Tag</label>
+                        <input type="text" id="tagInput" placeholder="Scan or enter tag ID" class="w-full p-2 border rounded-md">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="addStock" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-colors">
+                            <i class="bi bi-plus-lg mr-2"></i>Add to Stock
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize variables
+        let stream;
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('previewCanvas');
+        let ctx = canvas.getContext('2d');
+
+        // Button handlers
+        document.getElementById('startTrial').addEventListener('click', async () => {
+            // Validate selections
+            const gender = document.getElementById('gender').value;
+            const clothType = document.getElementById('clothType').value;
+            const size = document.getElementById('size').value;
+            const color = document.getElementById('color').value;
+
+            if (!gender || !clothType || !size || !color) {
+                alert('Please select all options');
+                return;
+            }
+
+            document.getElementById('selectionForm').classList.add('hidden');
+            document.getElementById('cameraPreview').classList.remove('hidden');
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('Error accessing camera. Please make sure you have granted camera permissions.');
+            }
+        });
+
+        document.getElementById('capture').addEventListener('click', () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Stop camera stream
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            document.getElementById('cameraPreview').classList.add('hidden');
+            document.getElementById('resultPreview').classList.remove('hidden');
+            
+            // Simulate cloth overlay (in real implementation, this would use computer vision)
+            simulateClothOverlay();
+        });
+
+        document.getElementById('tryAnother').addEventListener('click', () => {
+            document.getElementById('resultPreview').classList.add('hidden');
+            document.getElementById('selectionForm').classList.remove('hidden');
+            // Reset form
+            document.getElementById('gender').value = '';
+            document.getElementById('clothType').value = '';
+            document.getElementById('size').value = '';
+            document.getElementById('color').value = '';
+        });
+
+        // Stock management
+        document.getElementById('addStock').addEventListener('click', () => {
+            const tagId = document.getElementById('tagInput').value;
+            if (!tagId) {
+                alert('Please scan or enter a tag ID');
+                return;
+            }
+            // In real implementation, this would communicate with a backend
+            alert(`Item with tag ${tagId} added to stock successfully!`);
+            document.getElementById('tagInput').value = '';
+        });
+
+        function simulateClothOverlay() {
+            // In real implementation, this would use computer vision to overlay clothes
+            // For now, we'll just draw a simple colored rectangle
+            const color = document.getElementById('color').value;
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(canvas.width * 0.3, canvas.height * 0.2, 
+                        canvas.width * 0.4, canvas.height * 0.4);
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (canvas) {
+                // Maintain aspect ratio while resizing
+                const aspectRatio = canvas.width / canvas.height;
+                const newWidth = Math.min(window.innerWidth * 0.8, 800);
+                canvas.style.width = `${newWidth}px`;
+                canvas.style.height = `${newWidth / aspectRatio}px`;
+            }
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
